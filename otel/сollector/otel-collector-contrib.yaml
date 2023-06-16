@@ -3,10 +3,12 @@ receivers:
     protocols:
       grpc:
       http:
-        endpoint: "0.0.0.0:4317"
+        endpoint: "0.0.0.0:3100"
 
 exporters:
   logging:
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push
   prometheus:
     endpoint: "0.0.0.0:8889"
 
@@ -14,10 +16,10 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      exporters: [logging]
+      exporters: [loki]
     traces:
       receivers: [otlp]
       exporters: [logging]
     metrics:
       receivers: [otlp]
-      exporters: [logging, prometheus]
+      exporters: [logging,prometheus]
