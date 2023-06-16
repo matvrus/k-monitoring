@@ -3,3 +3,8 @@ kind: Kustomization
 resources:
 - gotk-components.yaml
 - gotk-sync.yaml
+- otel-collector.yaml
+- prometheus.yaml
+- fluentbit.yaml
+- grafana-loki.yaml
+- grafana.yaml
