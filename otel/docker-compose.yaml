@@ -3,7 +3,7 @@ services:
 
   # Kbot
   kbot:
-    image: matvrus/kbot:v1.0.0-41e7b7a-linux-amd64 
+    image: matvrus/kbot:v1.0.0-e31fd5b-linux-amd64
     environment:
       - METRICS_HOST=collector:4317
       - TELE_TOKEN=${TELE_TOKEN}
