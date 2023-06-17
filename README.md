@@ -92,6 +92,7 @@ K-Monitoring - це стек інструментів для моніторин�
 2. Застосуйте конфігураційні файли до вашого Kubernetes-кластера:
 
    ```bash
+   cd yaml
    kubectl apply -f prometheus.yaml
    kubectl apply -f opentelemetry.yaml
    kubectl apply -f grafana.yaml
