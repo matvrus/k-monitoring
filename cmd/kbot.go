@@ -1,76 +1,22 @@
 /*
-Copyright © 2023 NAME HERE den.vasyliev@gmail.com
+Copyright © 2023 NAME HERE <EMAIL ADDRESS>
 */
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"time"
 
 	"github.com/spf13/cobra"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 	telebot "gopkg.in/telebot.v3"
 )
 
 var (
-	// TeleToken bot
-	TeleToken   = os.Getenv("TELE_TOKEN")
-	// MetricsHost exporter host:port
-	MetricsHost = os.Getenv("METRICS_HOST")
-	// WeatherAPIKey weather api key
-	WeatherAPIKey = os.Getenv("WEATHER_API_KEY")
+	//Telegram bot token
+	TeleToken = os.Getenv("TELE_TOKEN")
 )
-
-// Initialize OpenTelemetry
-func initMetrics(ctx context.Context) {
-
-	// Create a new OTLP Metric gRPC exporter with the specified endpoint and options
-	exporter, _ := otlpmetricgrpc.New(
-		ctx,
-		otlpmetricgrpc.WithEndpoint(MetricsHost),
-		otlpmetricgrpc.WithInsecure(),
-	)
-
-	// Define the resource with attributes that are common to all metrics.
-	// labels/tags/resources that are common to all metrics.
-	resource := resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceNameKey.String(fmt.Sprintf("kbot_%s", appVersion)),
-	)
-
-	// Create a new MeterProvider with the specified resource and reader
-	mp := sdkmetric.NewMeterProvider(
-		sdkmetric.WithResource(resource),
-		sdkmetric.WithReader(
-			// collects and exports metric data every 10 seconds.
-			sdkmetric.NewPeriodicReader(exporter, sdkmetric.WithInterval(10*time.Second)),
-		),
-	)
-
-	// Set the global MeterProvider to the newly created MeterProvider
-	otel.SetMeterProvider(mp)
-
-}
-
-func pmetrics(ctx context.Context, payload string) {
-	// Get the global MeterProvider and create a new Meter with the name "kbot_light_signal_counter"
-	meter := otel.GetMeterProvider().Meter("kbot_light_signal_counter")
-
-	// Get or create an Int64Counter instrument with the name "kbot_light_signal_<payload>"
-	counter, _ := meter.Int64Counter(fmt.Sprintf("kbot_light_signal_%s", payload))
-
-	// Add a value of 1 to the Int64Counter
-	counter.Add(ctx, 1)
-}
 
 // kbotCmd represents the kbot command
 var kbotCmd = &cobra.Command{
@@ -84,13 +30,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		logger := log.New(os.Stdout, "", log.LstdFlags)
-
-		ctx := context.Background()
-		initMetrics(ctx)
-
-		logger.Printf("kbot %s started\n", appVersion)
-
+		fmt.Println("kbot %s started", appVersion)
 		kbot, err := telebot.NewBot(telebot.Settings{
 			URL:    "",
 			Token:  TeleToken,
@@ -98,48 +38,38 @@ to quickly create a Cobra application.`,
 		})
 
 		if err != nil {
-			logger.Fatalf("Please check TELE_TOKEN env variable. %s", err)
+			log.Fatalf("Please check TELE_TOKEN env variable. %s", err)
 			return
 		}
 
 		kbot.Handle(telebot.OnText, func(m telebot.Context) error {
-			logger.Println(m.Message().Payload, m.Text())
+
+			log.Print(m.Message().Payload, m.Text())
 			payload := m.Message().Payload
 
 			switch payload {
 			case "hello":
-				err = m.Send(fmt.Sprintf("Hello, %s! 😊 I'm Kbot %s!", m.Sender().FirstName, appVersion))
-			case "weather":
-				err = getWeather(ctx, m)
-			default:
-				err = m.Send(fmt.Sprintf("Unknown command: %s", payload))
-			}
+				err = m.Send(fmt.Sprintf("Hello, %s! I'm Kbot %s!", m.Sender().FirstName, appVersion))
 
+			}
 			return err
+
 		})
 
 		kbot.Start()
 	},
 }
 
-// getWeather retrieves and sends weather information to the user
-func getWeather(ctx context.Context, m telebot.Context) error {
-	resp, err := http.Get(fmt.Sprintf("http://api.openweathermap.org/data/2.5/weather?q=Kiev&appid=%s", WeatherAPIKey))
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	err = m.Send(fmt.Sprintf("Weather information:\n%s", string(body)))
-	return err
-}
-
 func init() {
 	rootCmd.AddCommand(kbotCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// kbotCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// kbotCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
